@@ -1,0 +1,250 @@
+{% extends 'bookings/base.html' %} {% block title %}Payment — TurfZone
+{%endblock %} {% block extra_css %}
+<style>
+  .pay-layout {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 1.5rem;
+    padding: 2rem 0;
+  }
+  .booking-summary {
+    background: var(--green-dark);
+    color: #fff;
+    border-radius: 12px;
+    padding: 1.5rem;
+  }
+  .booking-summary h3 {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 0.5px;
+    opacity: 0.7;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.45rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.95rem;
+  }
+  .summary-row:last-child {
+    border-bottom: none;
+  }
+  .summary-row .val {
+    font-weight: 600;
+  }
+  .total-fee {
+    background: var(--yellow);
+    color: var(--gray-900);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-top: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .total-fee .amount {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 2.4rem;
+    font-weight: 900;
+  }
+  .payment-methods {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+    margin: 1rem 0;
+  }
+  .method-option {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.9rem 1.1rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .method-option:hover {
+    border-color: var(--green);
+  }
+  .method-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--green);
+    cursor: pointer;
+  }
+  .method-option.active {
+    border-color: var(--green);
+    background: #f0faf4;
+  }
+  .method-icon {
+    font-size: 1.5rem;
+  }
+  .method-label {
+    font-weight: 600;
+  }
+  .method-sub {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+  }
+  #upiRefGroup {
+    display: none;
+    margin-top: 0.5rem;
+  }
+  .upi-id {
+    font-family: monospace;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--green-dark);
+    background: #e8f5ed;
+    padding: 0.3rem 0.8rem;
+    border-radius: 5px;
+    display: inline-block;
+    margin: 0.4rem 0;
+  }
+  @media (max-width: 768px) {
+    .pay-layout {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container">
+  <div class="pay-layout">
+    <div class="card">
+      <div class="card-header"><h2>💳 Complete Payment</h2></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+
+          <h4
+            style="
+              font-weight: 700;
+              margin-bottom: 0.8rem;
+              color: var(--gray-700);
+            "
+          >
+            Choose Payment Method
+          </h4>
+
+          <div class="payment-methods">
+            <label class="method-option" onclick="selectMethod('upi', this)">
+              <input type="radio" name="payment_method" value="upi" />
+              <span class="method-icon">📱</span>
+              <div>
+                <div class="method-label">UPI / GPay / PhonePe / Paytm</div>
+                <div class="method-sub">Enter ref number after payment</div>
+              </div>
+            </label>
+
+            <label class="method-option" onclick="selectMethod('card', this)">
+              <input type="radio" name="payment_method" value="card" />
+              <span class="method-icon">💳</span>
+              <div>
+                <div class="method-label">Credit / Debit Card</div>
+                <div class="method-sub">Manual confirmation</div>
+              </div>
+            </label>
+
+            <label
+              class="method-option"
+              onclick="selectMethod('netbanking', this)"
+            >
+              <input type="radio" name="payment_method" value="netbanking" />
+              <span class="method-icon">🏦</span>
+              <div>
+                <div class="method-label">Net Banking</div>
+                <div class="method-sub">Manual confirmation</div>
+              </div>
+            </label>
+
+            <label class="method-option" onclick="selectMethod('cash', this)">
+              <input type="radio" name="payment_method" value="cash" />
+              <span class="method-icon">💵</span>
+              <div>
+                <div class="method-label">Cash on Arrival</div>
+                <div class="method-sub">Pay at turf</div>
+              </div>
+            </label>
+          </div>
+
+          <!-- ✅ UPI only -->
+          <div id="upiRefGroup">
+            <div
+              style="
+                background: #f8f9fa;
+                border: 1px dashed var(--gray-200);
+                border-radius: 10px;
+                padding: 1.2rem;
+                text-align: center;
+                margin: 0.8rem 0;
+              "
+            >
+              <p style="font-size: 0.85rem; color: var(--gray-500)">
+                Send ₹{{ booking.fee }} to UPI ID:
+              </p>
+              <div class="upi-id">turfzone@upi</div>
+            </div>
+
+            <div class="form-group">
+              <label>UPI Reference Number</label>
+              <input type="text" name="upi_ref" class="form-control" />
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            class="btn btn-yellow btn-lg btn-block"
+            id="payBtn"
+            disabled
+          >
+            🔒 Confirm Booking ₹{{ booking.fee }}
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- RIGHT SIDE SAME -->
+    <div>
+      <div class="booking-summary">
+        <h3>Booking Summary</h3>
+        <div class="summary-row">
+          <span>ID</span><span class="val">{{ booking.booking_id }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Name</span><span class="val">{{ booking.name }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Date</span><span class="val">{{ booking.booking_date }}</span>
+        </div>
+        <div class="summary-row">
+          <span>Slot</span
+          ><span class="val">{{ booking.get_slot_display_label }}</span>
+        </div>
+
+        <div class="total-fee">
+          <span>Total</span>
+          <span class="amount">₹{{ booking.fee }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  function selectMethod(method, el) {
+    document
+      .querySelectorAll(".method-option")
+      .forEach((m) => m.classList.remove("active"));
+    el.classList.add("active");
+
+    // ✅ FIX: only show for UPI
+    document.getElementById("upiRefGroup").style.display =
+      method === "upi" ? "block" : "none";
+
+    document.getElementById("payBtn").disabled = false;
+  }
+</script>
+{% endblock %}

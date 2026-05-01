@@ -1,0 +1,286 @@
+{% extends 'bookings/base.html' %} {% block title %}Booking Confirmed —
+TurfZone{% endblock %} {% block extra_css %}
+<style>
+  .success-banner {
+    background: linear-gradient(135deg, var(--green-dark), var(--green));
+    color: #fff;
+    padding: 2.5rem;
+    text-align: center;
+    border-radius: 12px;
+    margin: 2rem 0 1.5rem;
+  }
+  .success-banner h1 {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+  }
+  .tick {
+    font-size: 3.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+    animation: pop 0.4s ease;
+  }
+  @keyframes pop {
+    0% {
+      transform: scale(0);
+    }
+    80% {
+      transform: scale(1.2);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+  .booking-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .booking-card-header {
+    background: var(--green-dark);
+    color: #fff;
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .booking-id-badge {
+    background: var(--yellow);
+    color: var(--gray-900);
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 900;
+    padding: 0.3rem 0.9rem;
+    border-radius: 6px;
+  }
+  .detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+  .detail-item {
+    padding: 0.9rem 1.5rem;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .detail-item:nth-child(odd) {
+    border-right: 1px solid var(--gray-100);
+  }
+  .detail-item .key {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--gray-500);
+    font-weight: 600;
+    margin-bottom: 0.2rem;
+  }
+  .detail-item .val {
+    font-size: 1.05rem;
+    font-weight: 600;
+  }
+  .slot-timeline {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    padding: 1.2rem 1.5rem;
+  }
+  .slot-t {
+    border-radius: 8px;
+    padding: 0.5rem 0.4rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+  }
+  .slot-t.available {
+    background: #f0faf4;
+    border-color: var(--green-light);
+    color: var(--green-dark);
+  }
+  .slot-t.booked-other {
+    background: #f8d7da;
+    border-color: #f5c6cb;
+    color: var(--red);
+  }
+  .slot-t.my-slot {
+    background: var(--green);
+    border-color: var(--green-dark);
+    color: #fff;
+    box-shadow: 0 3px 10px rgba(26, 122, 58, 0.35);
+    transform: scale(1.05);
+  }
+  .slot-t.night-t {
+    border-left: 3px solid #6c7ae0;
+  }
+  .slot-t.day-t {
+    border-left: 3px solid var(--green-light);
+  }
+  @media (max-width: 640px) {
+    .detail-grid {
+      grid-template-columns: 1fr;
+    }
+    .slot-timeline {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container">
+  <div class="success-banner">
+    <span class="tick">✅</span>
+    <h1>Booking Confirmed!</h1>
+    <p style="font-size: 1.1rem; opacity: 0.85; margin-top: 0.4rem">
+      Your turf slot is successfully booked. See you on the field!
+    </p>
+  </div>
+
+  <div class="booking-card">
+    <div class="booking-card-header">
+      <span
+        style="
+          font-family: &quot;Barlow Condensed&quot;, sans-serif;
+          font-size: 1.3rem;
+          font-weight: 700;
+        "
+        >📋 BOOKING DETAILS</span
+      >
+      <span class="booking-id-badge">{{ booking.booking_id }}</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="key">Name</div>
+        <div class="val">{{ booking.name }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Email</div>
+        <div class="val">{{ booking.email }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Phone</div>
+        <div class="val">{{ booking.phone }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Age</div>
+        <div class="val">{{ booking.age }} years</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Group Members</div>
+        <div class="val">{{ booking.group_members }} players</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Booking Date</div>
+        <div class="val">{{ booking.booking_date|date:"l, d F Y" }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Time Slot</div>
+        <div class="val">{{ booking.get_slot_display_label }}</div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Slot Type</div>
+        <div class="val">
+          {{ booking.get_day_type_display }} — {{
+          booking.get_time_period_display }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% if payment %}
+  <div class="booking-card">
+    <div class="booking-card-header">
+      <span
+        style="
+          font-family: &quot;Barlow Condensed&quot;, sans-serif;
+          font-size: 1.3rem;
+          font-weight: 700;
+        "
+        >💳 PAYMENT DETAILS</span
+      >
+      <span class="badge badge-confirmed">PAID ✓</span>
+    </div>
+    <div class="detail-grid">
+      <div class="detail-item">
+        <div class="key">Amount Paid</div>
+        <div class="val" style="color: var(--green); font-size: 1.4rem">
+          ₹{{ payment.amount }}
+        </div>
+      </div>
+      <div class="detail-item">
+        <div class="key">Payment Method</div>
+        <div class="val">{{ payment.get_payment_method_display }}</div>
+      </div>
+      {% if payment.transaction_id %}
+      <div class="detail-item">
+        <div class="key">Transaction Ref</div>
+        <div class="val" style="font-family: monospace">
+          {{ payment.transaction_id }}
+        </div>
+      </div>
+      {% endif %}
+      <div class="detail-item">
+        <div class="key">Payment Time</div>
+        <div class="val">{{ payment.paid_at|date:"d M Y, h:i A" }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="booking-card">
+    <div class="booking-card-header">
+      <span
+        style="
+          font-family: &quot;Barlow Condensed&quot;, sans-serif;
+          font-size: 1.3rem;
+          font-weight: 700;
+        "
+        >🕐 SLOT AVAILABILITY — {{ booking.booking_date|date:"d M Y" }}</span
+      >
+    </div>
+    <div
+      style="padding: 0.8rem 1.5rem; font-size: 0.82rem; color: var(--gray-500)"
+    >
+      🟢 Available &nbsp; 🔴 Booked &nbsp; ✅ Your Slot &nbsp;|&nbsp; ▌Green =
+      Day &nbsp; ▌Blue = Night
+    </div>
+    <div class="slot-timeline">
+      {% for slot in slot_status %}
+      <div
+        class="slot-t {% if slot.is_mine %}my-slot{% elif slot.is_booked %}booked-other{% else %}available{% endif %} {% if slot.period == 'night' %}night-t{% else %}day-t{% endif %}"
+      >
+        {% if slot.is_mine %}✅ YOUR SLOT{% elif slot.is_booked %}🔴 Booked{%
+        else %}🟢 Free{% endif %}
+        <div style="font-size: 0.65rem; margin-top: 0.2rem; opacity: 0.8">
+          {{ slot.label }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div
+    style="
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    "
+  >
+    <a href="/" class="btn btn-primary btn-lg">Book Another Slot</a>
+    <button onclick="window.print()" class="btn btn-outline btn-lg">
+      🖨️ Print / Save
+    </button>
+  </div>
+  <p
+    style="
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--gray-500);
+      margin-top: 1rem;
+    "
+  >
+    Save your Booking ID:
+    <strong style="color: var(--green-dark)">{{ booking.booking_id }}</strong>
+  </p>
+</div>
+{% endblock %}

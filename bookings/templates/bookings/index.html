@@ -1,0 +1,717 @@
+{% extends 'bookings/base.html' %} {% block title %}Book Turf Slot — TurfZone
+{%endblock %} {% block extra_css %}
+<style>
+  .hero {
+    background: linear-gradient(
+      135deg,
+      var(--green-dark) 0%,
+      var(--green) 100%
+    );
+    color: #fff;
+    padding: 3rem 0 2rem;
+    text-align: center;
+  }
+  .hero h1 {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+  }
+  .hero p {
+    font-size: 1.1rem;
+    opacity: 0.85;
+    margin-top: 0.5rem;
+  }
+
+  .fee-table {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .fee-card {
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    text-align: center;
+    font-weight: 600;
+  }
+  .fee-card .amount {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+    line-height: 1;
+  }
+  .fee-card .label {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+    margin-top: 0.25rem;
+  }
+  .fc-weekday-day {
+    background: #e8f5ed;
+    color: var(--green-dark);
+  }
+  .fc-weekday-night {
+    background: #e8f0ff;
+    color: #2233aa;
+  }
+  .fc-weekend-day {
+    background: #fff8e1;
+    color: #8a5c00;
+  }
+  .fc-weekend-night {
+    background: #fce4ec;
+    color: #8c1a1a;
+  }
+
+  .slot-section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    padding: 0.5rem 0.7rem;
+    border-radius: 7px;
+    margin: 1rem 0 0.5rem;
+  }
+  .slot-section-header.day-header {
+    background: #e8f5ed;
+    color: #0f4f25;
+    border-left: 4px solid #25a34f;
+  }
+  .slot-section-header.night-header {
+    background: #1a2033;
+    color: #a0c4ff;
+    border-left: 4px solid #6c7ae0;
+  }
+
+  .slot-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .slot-btn {
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    padding: 0.5rem 0.3rem;
+    text-align: center;
+    font-size: 0.72rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fff;
+    color: var(--gray-700);
+    line-height: 1.3;
+  }
+  .slot-btn:hover:not(.booked) {
+    border-color: var(--green);
+    color: var(--green);
+    background: #f0faf4;
+  }
+  .slot-btn.selected {
+    background: #1a7a3a !important;
+    color: #ffffff !important;
+    border-color: #0f4f25 !important;
+    box-shadow: 0 3px 10px rgba(26, 122, 58, 0.4);
+    transform: scale(1.05);
+  }
+  .slot-btn.booked {
+    background: #f8d7da;
+    color: #e63946;
+    border-color: #f5c6cb;
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  .slot-btn.night-slot {
+    border-left: 3px solid #6c7ae0;
+  }
+  .slot-btn.day-slot {
+    border-left: 3px solid #25a34f;
+  }
+
+  .legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    font-size: 0.82rem;
+    color: var(--gray-500);
+    margin-bottom: 0.6rem;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .fee-info-box {
+    background: linear-gradient(135deg, var(--green-dark), var(--green));
+    color: #fff;
+    border-radius: 10px;
+    padding: 1rem 1.4rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0.8rem 0;
+    display: none;
+  }
+  .fee-info-box .big {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 2rem;
+    font-weight: 900;
+  }
+
+  #slot-select {
+    display: none;
+  }
+
+  @media (max-width: 768px) {
+    .fee-table {
+      grid-template-columns: 1fr 1fr;
+    }
+    .slot-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+  @media (max-width: 480px) {
+    .slot-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="hero">
+  <h1>🏟️ Book Your Turf Slot</h1>
+  <p>
+    Cricket &nbsp;|&nbsp; Table Tennis &nbsp;|&nbsp; Tennis &nbsp;|&nbsp;
+    Football &nbsp;|&nbsp; And More &nbsp;|&nbsp; Open 24 Hours
+  </p>
+</div>
+
+<div class="container" style="padding-top: 2rem; padding-bottom: 2rem">
+  <!-- Fee Info -->
+  <div class="card" style="margin-bottom: 1.5rem">
+    <div class="card-header"><h2>💰 Slot Fees</h2></div>
+    <div class="card-body">
+      <div class="fee-table">
+        <div class="fee-card fc-weekday-day">
+          <div class="amount">₹700</div>
+          <div class="label">Weekday Day<br /><small>12 AM – 6 PM</small></div>
+        </div>
+        <div class="fee-card fc-weekday-night">
+          <div class="amount">₹900</div>
+          <div class="label">
+            Weekday Night<br /><small>6 PM – 12 AM</small>
+          </div>
+        </div>
+        <div class="fee-card fc-weekend-day">
+          <div class="amount">₹900</div>
+          <div class="label">Weekend Day<br /><small>12 AM – 6 PM</small></div>
+        </div>
+        <div class="fee-card fc-weekend-night">
+          <div class="amount">₹1100</div>
+          <div class="label">
+            Weekend Night<br /><small>6 PM – 12 AM</small>
+          </div>
+        </div>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--gray-500)">
+        ☀️ Day = 12:00 AM to 6:00 PM &nbsp;|&nbsp; 🌙 Night = 6:00 PM to 12:00
+        AM &nbsp;|&nbsp; Weekend = Saturday &amp; Sunday
+        <br />🏏 Cricket &nbsp;|&nbsp; 🏓 Table Tennis &nbsp;|&nbsp; 🎾 Tennis
+        &nbsp;|&nbsp; ⚽ Football &nbsp;|&nbsp; and more
+      </p>
+    </div>
+  </div>
+
+  <!-- Booking Form -->
+  <div class="card">
+    <div class="card-header"><h2>📋 Registration Form</h2></div>
+    <div class="card-body">
+      {% if form.non_field_errors %}
+      <div class="alert alert-error">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <form method="post" id="bookingForm">
+        {% csrf_token %}
+
+        <h3
+          style="
+            font-family: &quot;Barlow Condensed&quot;, sans-serif;
+            font-size: 1.2rem;
+            color: var(--green-dark);
+            margin-bottom: 1rem;
+          "
+        >
+          👤 PERSONAL DETAILS
+        </h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Full Name *</label>
+            {{ form.name }} {{ form.name.errors }}
+          </div>
+          <div class="form-group">
+            <label>Email Address *</label>
+            {{ form.email }} {{ form.email.errors }}
+          </div>
+          <div class="form-group">
+            <label>Phone Number *</label>
+            {{ form.phone }} {{ form.phone.errors }}
+          </div>
+          <div class="form-group">
+            <label>Your Age *</label>
+            {{ form.age }} {{ form.age.errors }}
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Number of Group Members *</label>
+          {{ form.group_members }}{{ form.group_members.errors }}
+          <small style="color: var(--gray-500)"
+            >Maximum number of members in your group</small
+          >
+        </div>
+
+        <hr style="margin: 1.5rem 0; border-color: var(--gray-100)" />
+        <h3
+          style="
+            font-family: &quot;Barlow Condensed&quot;, sans-serif;
+            font-size: 1.2rem;
+            color: var(--green-dark);
+            margin-bottom: 1rem;
+          "
+        >
+          📅 SLOT SELECTION
+        </h3>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Booking Date *</label>
+            {{ form.booking_date }}{{ form.booking_date.errors }}
+          </div>
+          <div class="form-group">
+            <label>Day Type</label>
+            <input
+              type="text"
+              id="dayTypeDisplay"
+              class="form-control"
+              readonly
+              placeholder="Auto-detected from date"
+              style="background: #f8f9fa"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Select Time Slot *</label>
+          <div class="legend">
+            <span class="legend-item"
+              ><span class="dot" style="background: #25a34f"></span> Day slot
+              (₹700 / ₹900)</span
+            >
+            <span class="legend-item"
+              ><span class="dot" style="background: #6c7ae0"></span> Night slot
+              (₹900 / ₹1100)</span
+            >
+            <span class="legend-item"
+              ><span class="dot" style="background: #e63946"></span> Already
+              booked</span
+            >
+            <span class="legend-item"
+              ><span class="dot" style="background: var(--green)"></span> Your
+              selection</span
+            >
+          </div>
+
+          <!-- DAY SLOTS -->
+          <div class="slot-section-header day-header">
+            ☀️ DAY SLOTS — 12:00 AM to 6:00 PM
+          </div>
+          <div class="slot-grid" id="daySlotGrid">
+            <div
+              class="slot-btn day-slot"
+              data-slot="00:00-01:00"
+              onclick="selectSlot(this)"
+            >
+              12:00 AM<br />1:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="01:00-02:00"
+              onclick="selectSlot(this)"
+            >
+              1:00 AM<br />2:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="02:00-03:00"
+              onclick="selectSlot(this)"
+            >
+              2:00 AM<br />3:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="03:00-04:00"
+              onclick="selectSlot(this)"
+            >
+              3:00 AM<br />4:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="04:00-05:00"
+              onclick="selectSlot(this)"
+            >
+              4:00 AM<br />5:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="05:00-06:00"
+              onclick="selectSlot(this)"
+            >
+              5:00 AM<br />6:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="06:00-07:00"
+              onclick="selectSlot(this)"
+            >
+              6:00 AM<br />7:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="07:00-08:00"
+              onclick="selectSlot(this)"
+            >
+              7:00 AM<br />8:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="08:00-09:00"
+              onclick="selectSlot(this)"
+            >
+              8:00 AM<br />9:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="09:00-10:00"
+              onclick="selectSlot(this)"
+            >
+              9:00 AM<br />10:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="10:00-11:00"
+              onclick="selectSlot(this)"
+            >
+              10:00 AM<br />11:00 AM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="11:00-12:00"
+              onclick="selectSlot(this)"
+            >
+              11:00 AM<br />12:00 PM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="12:00-13:00"
+              onclick="selectSlot(this)"
+            >
+              12:00 PM<br />1:00 PM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="13:00-14:00"
+              onclick="selectSlot(this)"
+            >
+              1:00 PM<br />2:00 PM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="14:00-15:00"
+              onclick="selectSlot(this)"
+            >
+              2:00 PM<br />3:00 PM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="15:00-16:00"
+              onclick="selectSlot(this)"
+            >
+              3:00 PM<br />4:00 PM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="16:00-17:00"
+              onclick="selectSlot(this)"
+            >
+              4:00 PM<br />5:00 PM
+            </div>
+            <div
+              class="slot-btn day-slot"
+              data-slot="17:00-18:00"
+              onclick="selectSlot(this)"
+            >
+              5:00 PM<br />6:00 PM
+            </div>
+          </div>
+
+          <!-- NIGHT SLOTS -->
+          <div class="slot-section-header night-header">
+            🌙 NIGHT SLOTS — 6:00 PM to 12:00 AM
+          </div>
+          <div class="slot-grid" id="nightSlotGrid">
+            <div
+              class="slot-btn night-slot"
+              data-slot="18:00-19:00"
+              onclick="selectSlot(this)"
+            >
+              6:00 PM<br />7:00 PM
+            </div>
+            <div
+              class="slot-btn night-slot"
+              data-slot="19:00-20:00"
+              onclick="selectSlot(this)"
+            >
+              7:00 PM<br />8:00 PM
+            </div>
+            <div
+              class="slot-btn night-slot"
+              data-slot="20:00-21:00"
+              onclick="selectSlot(this)"
+            >
+              8:00 PM<br />9:00 PM
+            </div>
+            <div
+              class="slot-btn night-slot"
+              data-slot="21:00-22:00"
+              onclick="selectSlot(this)"
+            >
+              9:00 PM<br />10:00 PM
+            </div>
+            <div
+              class="slot-btn night-slot"
+              data-slot="22:00-23:00"
+              onclick="selectSlot(this)"
+            >
+              10:00 PM<br />11:00 PM
+            </div>
+            <div
+              class="slot-btn night-slot"
+              data-slot="23:00-00:00"
+              onclick="selectSlot(this)"
+            >
+              11:00 PM<br />12:00 AM
+            </div>
+          </div>
+
+          <!-- Hidden select for form submission -->
+          <select name="slot" id="slot-select" required>
+            <option value="">-- Select a slot --</option>
+            <option value="00:00-01:00">12:00 AM – 1:00 AM</option>
+            <option value="01:00-02:00">1:00 AM – 2:00 AM</option>
+            <option value="02:00-03:00">2:00 AM – 3:00 AM</option>
+            <option value="03:00-04:00">3:00 AM – 4:00 AM</option>
+            <option value="04:00-05:00">4:00 AM – 5:00 AM</option>
+            <option value="05:00-06:00">5:00 AM – 6:00 AM</option>
+            <option value="06:00-07:00">6:00 AM – 7:00 AM</option>
+            <option value="07:00-08:00">7:00 AM – 8:00 AM</option>
+            <option value="08:00-09:00">8:00 AM – 9:00 AM</option>
+            <option value="09:00-10:00">9:00 AM – 10:00 AM</option>
+            <option value="10:00-11:00">10:00 AM – 11:00 AM</option>
+            <option value="11:00-12:00">11:00 AM – 12:00 PM</option>
+            <option value="12:00-13:00">12:00 PM – 1:00 PM</option>
+            <option value="13:00-14:00">1:00 PM – 2:00 PM</option>
+            <option value="14:00-15:00">2:00 PM – 3:00 PM</option>
+            <option value="15:00-16:00">3:00 PM – 4:00 PM</option>
+            <option value="16:00-17:00">4:00 PM – 5:00 PM</option>
+            <option value="17:00-18:00">5:00 PM – 6:00 PM</option>
+            <option value="18:00-19:00">6:00 PM – 7:00 PM</option>
+            <option value="19:00-20:00">7:00 PM – 8:00 PM</option>
+            <option value="20:00-21:00">8:00 PM – 9:00 PM</option>
+            <option value="21:00-22:00">9:00 PM – 10:00 PM</option>
+            <option value="22:00-23:00">10:00 PM – 11:00 PM</option>
+            <option value="23:00-00:00">11:00 PM – 12:00 AM</option>
+          </select>
+        </div>
+
+        <!-- Fee display box -->
+        <div class="fee-info-box" id="feeInfoBox">
+          <span id="periodIcon">☀️</span> Selected:
+          <strong><span id="selectedSlotLabel">-</span></strong
+          ><br />
+          Fee: <span class="big">₹<span id="feeAmount">-</span></span>
+          <span
+            id="periodBadge"
+            style="margin-left: 0.5rem; font-size: 0.8rem; opacity: 0.85"
+          ></span>
+        </div>
+
+        <button
+          type="submit"
+          class="btn btn-primary btn-lg btn-block"
+          style="margin-top: 1.2rem"
+          id="submitBtn"
+          disabled
+        >
+          Proceed to Payment →
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  const NIGHT_SLOTS = ['18:00-19:00','19:00-20:00','20:00-21:00','21:00-22:00','22:00-23:00','23:00-00:00'];
+  let selectedSlot = null;
+
+  // Page load pe aaj ke booked slots mark karo
+  const bookedToday = {{ booked_slots_today|safe }};
+  bookedToday.forEach(function(slot) {
+      const btn = document.querySelector('.slot-btn[data-slot="' + slot + '"]');
+      if (btn) btn.classList.add('booked');
+  });
+
+  // Slot select karo
+  function selectSlot(el) {
+      if (el.classList.contains('booked')) {
+          alert('Yeh slot already booked hai! Koi aur slot choose karo.');
+          return;
+      }
+
+      // Pehle wala selected hata do
+      document.querySelectorAll('.slot-btn').forEach(function(b) {
+          b.classList.remove('selected');
+          b.style.background = '';
+          b.style.color = '';
+      });
+
+      // Naya select karo
+      el.classList.add('selected');
+      el.style.background = '#1a7a3a';
+      el.style.color = '#ffffff';
+      el.style.borderColor = '#0f4f25';
+
+      selectedSlot = el.getAttribute('data-slot');
+      document.getElementById('slot-select').value = selectedSlot;
+
+      // Fee box dikhao
+      const dateVal = document.getElementById('id_booking_date').value;
+      if (dateVal) {
+          fetchFee(dateVal, selectedSlot);
+      } else {
+          // Date nahi select ki to bhi fee box dikhao basic info ke saath
+          const isNight = NIGHT_SLOTS.includes(selectedSlot);
+          document.getElementById('periodIcon').textContent = isNight ? '🌙' : '☀️';
+          document.getElementById('selectedSlotLabel').textContent = el.innerText.replace('\n', ' – ');
+          document.getElementById('feeAmount').textContent = '?';
+          document.getElementById('periodBadge').textContent = '(Select date to see fee)';
+          document.getElementById('feeInfoBox').style.display = 'block';
+      }
+
+      // Submit button enable karo
+      checkSubmit();
+  }
+
+  // Fee fetch karo API se
+  function fetchFee(dateStr, slot) {
+      fetch('/api/slot-fee/?date=' + dateStr + '&slot=' + slot)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+              const slotEl = document.querySelector('.slot-btn[data-slot="' + slot + '"]');
+              const label = slotEl ? slotEl.innerText.replace('\n', ' – ') : slot;
+              const isNight = NIGHT_SLOTS.includes(slot);
+
+              document.getElementById('feeAmount').textContent = data.fee;
+              document.getElementById('selectedSlotLabel').textContent = label;
+              document.getElementById('periodIcon').textContent = isNight ? '🌙' : '☀️';
+              document.getElementById('periodBadge').textContent =
+                  '(' + (data.day_type === 'weekend' ? 'Weekend' : 'Weekday') +
+                  ' ' + (isNight ? 'Night' : 'Day') + ')';
+              document.getElementById('feeInfoBox').style.display = 'block';
+          })
+          .catch(function() {
+              document.getElementById('feeInfoBox').style.display = 'block';
+          });
+  }
+
+  // Date change hone pe booked slots refresh karo
+  function fetchBookedSlots(dateStr) {
+      fetch('/api/booked-slots/?date=' + dateStr)
+          .then(function(r) { return r.json(); })
+          .then(function(data) {
+              // Pehle sab reset karo
+              document.querySelectorAll('.slot-btn').forEach(function(btn) {
+                  btn.classList.remove('booked');
+                  // Jo selected hai usko selected rakhna
+                  if (btn.getAttribute('data-slot') === selectedSlot) {
+                      btn.classList.add('selected');
+                      btn.style.background = '#1a7a3a';
+                      btn.style.color = '#ffffff';
+                  }
+              });
+
+              // Booked slots mark karo
+              data.booked_slots.forEach(function(slot) {
+                  const btn = document.querySelector('.slot-btn[data-slot="' + slot + '"]');
+                  if (btn) {
+                      btn.classList.add('booked');
+                      btn.classList.remove('selected');
+                      btn.style.background = '';
+                      btn.style.color = '';
+                      // Agar selected slot booked ho gaya to reset
+                      if (slot === selectedSlot) {
+                          selectedSlot = null;
+                          document.getElementById('slot-select').value = '';
+                          document.getElementById('feeInfoBox').style.display = 'none';
+                      }
+                  }
+              });
+
+              checkSubmit();
+          });
+  }
+
+  // Date input change
+  document.getElementById('id_booking_date').addEventListener('change', function() {
+      const d = new Date(this.value);
+      const isWeekend = (d.getDay() === 0 || d.getDay() === 6);
+      document.getElementById('dayTypeDisplay').value =
+          isWeekend ? '📅 Weekend (Sat / Sun)' : '📅 Weekday (Mon – Fri)';
+      fetchBookedSlots(this.value);
+      if (selectedSlot) {
+          fetchFee(this.value, selectedSlot);
+      }
+  });
+
+  // Submit button check
+  function checkSubmit() {
+      const dateVal = document.getElementById('id_booking_date').value;
+      const btn = document.getElementById('submitBtn');
+      if (dateVal && selectedSlot) {
+          btn.disabled = false;
+          btn.style.opacity = '1';
+          btn.style.cursor = 'pointer';
+      } else {
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+          btn.style.cursor = 'not-allowed';
+      }
+  }
+
+  // form-control class inputs ko
+  document.querySelectorAll('input:not([type=submit]):not([type=hidden]), textarea')
+      .forEach(function(el) { el.classList.add('form-control'); });
+
+  // Submit button initially disabled dikhao
+  document.getElementById('submitBtn').style.opacity = '0.5';
+  document.getElementById('submitBtn').style.cursor = 'not-allowed';
+</script>
+{% endblock %}

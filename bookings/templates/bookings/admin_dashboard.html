@@ -1,0 +1,411 @@
+{% extends 'bookings/base.html' %} {% block title %}Admin Dashboard — TurfZone
+{%endblock %} {% block extra_css %}
+<style>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin: 1.5rem 0;
+  }
+  .stat-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1.3rem 1.5rem;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.07);
+    border-left: 4px solid var(--green);
+  }
+  .stat-card .num {
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--green-dark);
+    line-height: 1;
+  }
+  .stat-card .lbl {
+    font-size: 0.82rem;
+    color: var(--gray-500);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 0.3rem;
+  }
+  .stat-card.revenue {
+    border-color: #d4a800;
+  }
+  .stat-card.revenue .num {
+    color: #d4a800;
+  }
+  .export-box {
+    background: linear-gradient(135deg, #1a2033, #2d3a5e);
+    border-radius: 12px;
+    padding: 1.4rem 1.8rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .export-box h3 {
+    color: #fff;
+    font-family: "Barlow Condensed", sans-serif;
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  .export-box p {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    margin: 0.2rem 0 0;
+  }
+  .export-controls {
+    display: flex;
+    gap: 0.7rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .export-select {
+    padding: 0.55rem 0.9rem;
+    border-radius: 7px;
+    border: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+    background: #fff;
+    color: #1a2033;
+    cursor: pointer;
+  }
+  .btn-excel {
+    background: #1d6f42;
+    color: #fff;
+    border: none;
+    border-radius: 7px;
+    padding: 0.55rem 1.2rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background 0.2s;
+  }
+  .btn-excel:hover {
+    background: #155c35;
+    color: #fff;
+  }
+  .filter-bar {
+    background: #fff;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.2rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+  .filter-bar .form-group {
+    margin-bottom: 0;
+    flex: 1;
+    min-width: 150px;
+  }
+  .table-wrap {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+    overflow: auto;
+    margin-bottom: 1.5rem;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  thead th {
+    background: var(--green-dark);
+    color: #fff;
+    padding: 0.7rem 1rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-align: left;
+    white-space: nowrap;
+  }
+  tbody tr:nth-child(even) {
+    background: #f8f9fa;
+  }
+  tbody tr:hover {
+    background: #f0faf4;
+  }
+  tbody td {
+    padding: 0.65rem 1rem;
+    font-size: 0.88rem;
+    color: var(--gray-700);
+    border-bottom: 1px solid var(--gray-100);
+    white-space: nowrap;
+  }
+  .slot-grid-today {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0.5rem;
+    padding: 1rem 1.5rem;
+  }
+  .s {
+    border-radius: 6px;
+    padding: 0.4rem;
+    text-align: center;
+    font-size: 0.7rem;
+    font-weight: 700;
+  }
+  .s.free {
+    background: #f0faf4;
+    color: #0f4f25;
+    border-left: 3px solid #25a34f;
+  }
+  .s.taken {
+    background: #f8d7da;
+    color: #e63946;
+    border-left: 3px solid #e63946;
+  }
+  .s.nfree {
+    background: #f0faf4;
+    color: #0f4f25;
+    border-left: 3px solid #6c7ae0;
+  }
+  .s.ntaken {
+    background: #f8d7da;
+    color: #e63946;
+    border-left: 3px solid #6c7ae0;
+  }
+  @media (max-width: 768px) {
+    .stats-grid {
+      grid-template-columns: 1fr 1fr;
+    }
+    .slot-grid-today {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="container" style="padding-top: 2rem; padding-bottom: 2rem">
+  <div
+    style="
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+      gap: 1rem;
+    "
+  >
+    <div>
+      <h1
+        style="
+          font-family: &quot;Barlow Condensed&quot;, sans-serif;
+          font-size: 2rem;
+          font-weight: 900;
+          color: var(--green-dark);
+          margin: 0;
+        "
+      >
+        🏟️ Admin Dashboard
+      </h1>
+      <p style="color: var(--gray-500); font-size: 0.9rem; margin: 0.2rem 0 0">
+        Showing bookings for: <strong>{{ current_month }}</strong>
+      </p>
+    </div>
+    <a href="/admin-logout/" class="btn btn-outline">Logout</a>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="num">{{ total }}</div>
+      <div class="lbl">This Month Bookings</div>
+    </div>
+    <div class="stat-card">
+      <div class="num">{{ confirmed }}</div>
+      <div class="lbl">Confirmed</div>
+    </div>
+    <div class="stat-card" style="border-color: #f59e0b">
+      <div class="num" style="color: #92400e">{{ pending }}</div>
+      <div class="lbl">Pending</div>
+    </div>
+    <div class="stat-card revenue">
+      <div class="num">Rs.{{ total_revenue }}</div>
+      <div class="lbl">This Month Revenue</div>
+    </div>
+  </div>
+
+  <!-- Monthly Export Box -->
+  <div class="export-box">
+    <div>
+      <h3>📥 Monthly Excel Export</h3>
+      <p>Kisi bhi month ka data Excel mein download karo</p>
+    </div>
+    <div class="export-controls">
+      <select class="export-select" id="exportMonthSelect">
+        {% for m in months_list %}
+        <option value="{{ m.month }}-{{ m.year }}">{{ m.label }}</option>
+        {% endfor %}
+      </select>
+      <a href="#" class="btn-excel" id="exportBtn">⬇️ Download Excel</a>
+    </div>
+  </div>
+
+  <!-- Today Slots -->
+  <div class="card" style="margin-bottom: 1.5rem">
+    <div class="card-header">
+      <h2>Today's Slots — {{ today|date:"l, d M Y" }}</h2>
+    </div>
+    <div
+      style="padding: 0.5rem 1.5rem; font-size: 0.8rem; color: var(--gray-500)"
+    >
+      Green = Day | Blue = Night | Red = Booked
+    </div>
+    <div class="slot-grid-today" id="todaySlots"></div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filter-bar">
+    <form method="get" style="display: contents">
+      <div class="form-group">
+        <label>Date</label
+        ><input
+          type="date"
+          name="date"
+          class="form-control"
+          value="{{ date_filter }}"
+        />
+      </div>
+      <div class="form-group">
+        <label>Status</label>
+        <select name="status" class="form-control">
+          <option value="">All</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="pending">Pending</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Search</label
+        ><input
+          type="text"
+          name="search"
+          class="form-control"
+          placeholder="Name / Email / Booking ID"
+          value="{{ search }}"
+        />
+      </div>
+      <button type="submit" class="btn btn-primary">Filter</button>
+      <a href="/admin-dashboard/" class="btn btn-outline">Clear</a>
+    </form>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Booking ID</th>
+          <th>Name</th>
+          <th>Phone</th>
+          <th>Email</th>
+          <th>Age</th>
+          <th>Members</th>
+          <th>Date</th>
+          <th>Slot</th>
+          <th>Type</th>
+          <th>Fee</th>
+          <th>Payment</th>
+          <th>Method</th>
+          <th>Txn Ref</th>
+          <th>Status</th>
+          <th>Booked On</th>
+        </tr>
+      </thead>
+      <tbody id="bookingTableBody"></tbody>
+    </table>
+    <div
+      id="noBookings"
+      style="
+        display: none;
+        text-align: center;
+        padding: 2rem;
+        color: var(--gray-500);
+      "
+    >
+      No bookings found for {{ current_month }}.
+    </div>
+  </div>
+  <p style="font-size: 0.85rem; color: var(--gray-500)">
+    Showing <span id="bookingCount">0</span> booking(s) for {{ current_month }}.
+  </p>
+</div>
+
+<script>
+  // Today slots grid
+  var bookedToday = {{ today_booked|safe }};
+  var allSlots = [
+    ['00:00-01:00','12AM-1AM','day'],['01:00-02:00','1AM-2AM','day'],
+    ['02:00-03:00','2AM-3AM','day'],['03:00-04:00','3AM-4AM','day'],
+    ['04:00-05:00','4AM-5AM','day'],['05:00-06:00','5AM-6AM','day'],
+    ['06:00-07:00','6AM-7AM','day'],['07:00-08:00','7AM-8AM','day'],
+    ['08:00-09:00','8AM-9AM','day'],['09:00-10:00','9AM-10AM','day'],
+    ['10:00-11:00','10AM-11AM','day'],['11:00-12:00','11AM-12PM','day'],
+    ['12:00-13:00','12PM-1PM','day'],['13:00-14:00','1PM-2PM','day'],
+    ['14:00-15:00','2PM-3PM','day'],['15:00-16:00','3PM-4PM','day'],
+    ['16:00-17:00','4PM-5PM','day'],['17:00-18:00','5PM-6PM','day'],
+    ['18:00-19:00','6PM-7PM','night'],['19:00-20:00','7PM-8PM','night'],
+    ['20:00-21:00','8PM-9PM','night'],['21:00-22:00','9PM-10PM','night'],
+    ['22:00-23:00','10PM-11PM','night'],['23:00-00:00','11PM-12AM','night']
+  ];
+  var grid = document.getElementById('todaySlots');
+  allSlots.forEach(function(s){
+    var taken = bookedToday.indexOf(s[0]) !== -1;
+    var cls = s[2]==='night'?(taken?'s ntaken':'s nfree'):(taken?'s taken':'s free');
+    grid.innerHTML += '<div class="'+cls+'">'+(taken?'Booked':'Available')+'<div style="font-size:.6rem;margin-top:.1rem">'+s[1]+'</div></div>';
+  });
+
+  // Bookings table
+  var bookings = {{ bookings_json|safe }};
+  var tbody = document.getElementById('bookingTableBody');
+  document.getElementById('bookingCount').textContent = bookings.length;
+  if(bookings.length === 0){
+    document.getElementById('noBookings').style.display = 'block';
+  }
+  bookings.forEach(function(b){
+    var payBadge = b.payment_status==='Paid'
+      ?'<span class="badge badge-confirmed">Paid</span>'
+      :'<span class="badge badge-pending">No Payment</span>';
+    var statusBadge = b.status==='confirmed'
+      ?'<span class="badge badge-confirmed">Confirmed</span>'
+      :'<span class="badge badge-pending">Pending</span>';
+    tbody.innerHTML +=
+      '<tr>'+
+      '<td style="font-family:monospace;font-weight:700;color:var(--green-dark)">'+b.booking_id+'</td>'+
+      '<td><strong>'+b.name+'</strong></td>'+
+      '<td>'+b.phone+'</td>'+
+      '<td style="font-size:.8rem">'+b.email+'</td>'+
+      '<td>'+b.age+'</td>'+
+      '<td>'+b.group_members+'</td>'+
+      '<td>'+b.booking_date+'</td>'+
+      '<td style="font-size:.8rem;font-weight:600">'+b.slot+'</td>'+
+      '<td>'+b.time_period+'</td>'+
+      '<td style="font-weight:700;color:var(--green)">Rs.'+b.fee+'</td>'+
+      '<td>'+payBadge+'</td>'+
+      '<td>'+b.pay_method+'</td>'+
+      '<td style="font-family:monospace;font-size:.8rem">'+b.txn_ref+'</td>'+
+      '<td>'+statusBadge+'</td>'+
+      '<td style="font-size:.8rem;color:var(--gray-500)">'+b.created_at+'</td>'+
+      '</tr>';
+  });
+
+  // Export button
+  document.getElementById('exportBtn').addEventListener('click', function(e){
+    e.preventDefault();
+    var val = document.getElementById('exportMonthSelect').value;
+    var parts = val.split('-');
+    var m = parts[0];
+    var y = parts[1];
+    window.location.href = '/export-month/?month='+m+'&year='+y;
+  });
+</script>
+{% endblock %}
